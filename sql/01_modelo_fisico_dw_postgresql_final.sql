@@ -1,12 +1,20 @@
 -- ============================================================
 -- Projeto OLAP e ETL - AdventureWorks2016
 -- Modelo físico PostgreSQL - Star Schema de Vendas
--- Gerado para execução no DBeaver
+-- Projeto individual
 -- ============================================================
 
 BEGIN;
 
 CREATE SCHEMA IF NOT EXISTS dw;
+
+-- ============================================================
+-- ESTRATÉGIA DAS DIMENSÕES
+-- As dimensões utilizam Slowly Changing Dimension (SCD) Tipo 1.
+-- Alterações nos atributos dimensionais substituem o valor anterior,
+-- sem manutenção de histórico de versões na própria dimensão.
+-- O histórico transacional permanece preservado na tabela fato.
+-- ============================================================
 
 -- ============================================================
 -- DIMENSÃO TEMPO
@@ -202,6 +210,10 @@ CREATE TABLE IF NOT EXISTS dw.fato_venda (
 -- ÍNDICES
 -- PostgreSQL não cria automaticamente índices para as FKs
 -- da tabela que referencia as dimensões.
+--
+-- Não é criado índice isolado para sales_order_id porque a
+-- constraint UNIQUE (sales_order_id, sales_order_detail_id)
+-- já cria um índice B-tree cujo primeiro campo é sales_order_id.
 -- ============================================================
 CREATE INDEX IF NOT EXISTS idx_fato_venda_sk_tempo
     ON dw.fato_venda (sk_tempo);
@@ -211,9 +223,6 @@ CREATE INDEX IF NOT EXISTS idx_fato_venda_sk_produto
 
 CREATE INDEX IF NOT EXISTS idx_fato_venda_sk_territorio
     ON dw.fato_venda (sk_territorio);
-
-CREATE INDEX IF NOT EXISTS idx_fato_venda_sales_order_id
-    ON dw.fato_venda (sales_order_id);
 
 -- ============================================================
 -- COMENTÁRIOS DE DOCUMENTAÇÃO

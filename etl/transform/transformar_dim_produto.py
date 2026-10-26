@@ -60,7 +60,7 @@ def transformar_dim_produto(df):
 
     df["tamanho"] = (
         df["tamanho"]
-        .fillna("Não informado")
+        .fillna("N/A")
     )
 
     df["nome_subcategoria"] = (

@@ -1,0 +1,16 @@
+FASE 3 - Infraestrutura Docker + Airflow + PostgreSQL
+
+Esta pasta reúne as capturas enviadas durante as atividades que pertencem ao escopo formal da Fase 3.
+
+Critério de seleção:
+- configuração do SQL Server para acesso a partir dos containers;
+- estrutura .env / docker-compose;
+- validação de conectividade Docker -> SQL Server;
+- acesso e saúde do Apache Airflow;
+- providers ODBC/PostgreSQL;
+- cadastro das Connections adventureworks_sqlserver e adventureworks_dw.
+
+ATENÇÃO:
+A imagem 04_SQLServer_tentativa_criacao_login_com_erro.png contém uma senha de teste visível no editor SQL. Não publique essa captura em repositório público sem redigir/cortar esse trecho.
+
+Imagens de carga do DW, ETL e DAG foram excluídas porque pertencem às fases 4, 5 e 6.

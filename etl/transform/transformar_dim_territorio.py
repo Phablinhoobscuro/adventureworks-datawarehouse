@@ -46,7 +46,7 @@ def transformar_dim_territorio(df):
 
     df["codigo_pais"] = (
         df["codigo_pais"]
-        .fillna("Não informado")
+        .fillna("N/A")
     )
 
     df["grupo_territorial"] = (

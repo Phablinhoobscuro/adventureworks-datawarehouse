@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from airflow.sdk import dag, task
 
@@ -17,12 +17,61 @@ from etl.incremental.pipeline_incremental import (
 
 @dag(
     dag_id="etl_adventureworks_dw",
+    description=(
+        "ETL incremental do AdventureWorks2016 "
+        "para o Data Warehouse PostgreSQL."
+    ),
     schedule=None,
     start_date=datetime(2026, 1, 1),
     catchup=False,
-    tags=["adventureworks", "etl", "dw", "incremental"],
+    max_active_runs=1,
+    default_args={
+        "retries": 2,
+        "retry_delay": timedelta(minutes=1),
+    },
+    tags=[
+        "adventureworks",
+        "etl",
+        "dw",
+        "incremental",
+    ],
 )
 def etl_adventureworks_dw():
+
+    @task
+    def testar_conexoes():
+        """
+        Valida o acesso ao SQL Server de origem
+        e ao PostgreSQL do Data Warehouse antes
+        de iniciar a ETL.
+        """
+
+        sql_server = None
+        postgres = None
+
+        try:
+            sql_server = conectar_sql_server()
+            postgres = conectar_postgres()
+
+            print(
+                "Conexão com SQL Server validada com sucesso."
+            )
+
+            print(
+                "Conexão com PostgreSQL DW validada com sucesso."
+            )
+
+            return {
+                "sql_server": "ok",
+                "postgres_dw": "ok",
+            }
+
+        finally:
+            if sql_server is not None:
+                sql_server.close()
+
+            if postgres is not None:
+                postgres.close()
 
     @task
     def carregar_dim_produto():
@@ -104,13 +153,25 @@ def etl_adventureworks_dw():
             sql_server.close()
             postgres.close()
 
+    inicio = testar_conexoes()
+
     produto = carregar_dim_produto()
     territorio = carregar_dim_territorio()
     tempo = carregar_dim_tempo()
 
     fato = carregar_fato_venda()
 
-    [produto, territorio, tempo] >> fato
+    inicio >> [
+        produto,
+        territorio,
+        tempo,
+    ]
+
+    [
+        produto,
+        territorio,
+        tempo,
+    ] >> fato
 
 
 etl_adventureworks_dw()

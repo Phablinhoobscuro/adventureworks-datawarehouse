@@ -30,12 +30,20 @@ def conectar_sql_server():
     1. Airflow Connection 'adventureworks_sqlserver'
     2. Variáveis de ambiente como fallback
 
-    O fallback permite que a ETL continue podendo ser executada
-    manualmente fora do contexto do Apache Airflow.
+    O fallback é utilizado somente quando a Airflow Connection
+    não está disponível.
+
+    Caso a Airflow Connection exista, mas a conexão com o banco
+    falhe, a exceção é propagada. Dessa forma, o Apache Airflow
+    pode registrar corretamente a falha e executar os retries
+    configurados na DAG.
+
+    O fallback também permite que a ETL continue podendo ser
+    executada manualmente fora do contexto do Apache Airflow.
     """
 
     # --------------------------------------------------------
-    # Tenta utilizar a Connection cadastrada no Airflow
+    # Tenta obter a Connection cadastrada no Airflow
     # --------------------------------------------------------
 
     if BaseHook is not None:
@@ -44,6 +52,18 @@ def conectar_sql_server():
                 SQLSERVER_CONN_ID
             )
 
+        except Exception as erro:
+            print(
+                "Não foi possível obter a Airflow Connection "
+                f"'{SQLSERVER_CONN_ID}'. "
+                "Tentando variáveis de ambiente."
+            )
+
+            print(
+                f"Detalhe: {type(erro).__name__}"
+            )
+
+        else:
             extras = conexao_airflow.extra_dejson
 
             driver = extras.get(
@@ -78,25 +98,18 @@ def conectar_sql_server():
                 f"ApplicationIntent={application_intent};"
             )
 
+            # A conexão é criada antes da mensagem de sucesso.
+            # Caso falhe, a exceção é propagada ao Airflow.
+            conexao = pyodbc.connect(
+                string_conexao
+            )
+
             print(
                 "Conexão SQL Server obtida pelo Airflow: "
                 f"{SQLSERVER_CONN_ID}"
             )
 
-            return pyodbc.connect(
-                string_conexao
-            )
-
-        except Exception as erro:
-            print(
-                "Não foi possível utilizar a Airflow Connection "
-                f"'{SQLSERVER_CONN_ID}'. "
-                "Tentando variáveis de ambiente."
-            )
-
-            print(
-                f"Detalhe: {type(erro).__name__}"
-            )
+            return conexao
 
     # --------------------------------------------------------
     # Fallback pelas variáveis de ambiente
@@ -147,14 +160,16 @@ def conectar_sql_server():
         "ApplicationIntent=ReadOnly;"
     )
 
+    conexao = pyodbc.connect(
+        string_conexao
+    )
+
     print(
         "Conexão SQL Server obtida pelas variáveis "
         "de ambiente."
     )
 
-    return pyodbc.connect(
-        string_conexao
-    )
+    return conexao
 
 
 # ============================================================
@@ -169,12 +184,20 @@ def conectar_postgres():
     1. Airflow Connection 'postgres_dw'
     2. Variáveis de ambiente como fallback
 
-    O fallback permite que a ETL continue podendo ser executada
-    manualmente fora do contexto do Apache Airflow.
+    O fallback é utilizado somente quando a Airflow Connection
+    não está disponível.
+
+    Caso a Airflow Connection exista, mas a conexão com o banco
+    falhe, a exceção é propagada. Dessa forma, o Apache Airflow
+    pode registrar corretamente a falha e executar os retries
+    configurados na DAG.
+
+    O fallback também permite que a ETL continue podendo ser
+    executada manualmente fora do contexto do Apache Airflow.
     """
 
     # --------------------------------------------------------
-    # Tenta utilizar a Connection cadastrada no Airflow
+    # Tenta obter a Connection cadastrada no Airflow
     # --------------------------------------------------------
 
     if BaseHook is not None:
@@ -183,22 +206,9 @@ def conectar_postgres():
                 POSTGRES_CONN_ID
             )
 
-            print(
-                "Conexão PostgreSQL obtida pelo Airflow: "
-                f"{POSTGRES_CONN_ID}"
-            )
-
-            return psycopg2.connect(
-                host=conexao_airflow.host,
-                port=conexao_airflow.port or 5432,
-                database=conexao_airflow.schema,
-                user=conexao_airflow.login,
-                password=conexao_airflow.password
-            )
-
         except Exception as erro:
             print(
-                "Não foi possível utilizar a Airflow Connection "
+                "Não foi possível obter a Airflow Connection "
                 f"'{POSTGRES_CONN_ID}'. "
                 "Tentando variáveis de ambiente."
             )
@@ -206,6 +216,24 @@ def conectar_postgres():
             print(
                 f"Detalhe: {type(erro).__name__}"
             )
+
+        else:
+            # A conexão é criada antes da mensagem de sucesso.
+            # Caso falhe, a exceção é propagada ao Airflow.
+            conexao = psycopg2.connect(
+                host=conexao_airflow.host,
+                port=conexao_airflow.port or 5432,
+                database=conexao_airflow.schema,
+                user=conexao_airflow.login,
+                password=conexao_airflow.password
+            )
+
+            print(
+                "Conexão PostgreSQL obtida pelo Airflow: "
+                f"{POSTGRES_CONN_ID}"
+            )
+
+            return conexao
 
     # --------------------------------------------------------
     # Fallback pelas variáveis de ambiente
@@ -240,15 +268,17 @@ def conectar_postgres():
             "pelo Airflow nem pelas variáveis de ambiente."
         )
 
-    print(
-        "Conexão PostgreSQL obtida pelas variáveis "
-        "de ambiente."
-    )
-
-    return psycopg2.connect(
+    conexao = psycopg2.connect(
         host=host,
         port=port,
         database=database,
         user=usuario,
         password=senha
     )
+
+    print(
+        "Conexão PostgreSQL obtida pelas variáveis "
+        "de ambiente."
+    )
+
+    return conexao
